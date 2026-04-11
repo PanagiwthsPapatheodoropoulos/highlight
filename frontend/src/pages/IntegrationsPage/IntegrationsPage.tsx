@@ -1,6 +1,6 @@
 import { useAuthContext } from '@authentication/AuthContext'
 import { useSlackBot } from '@components/Header/components/ConnectHighlightWithSlackButton/utils/utils'
-import { Box, Stack, Text } from '@highlight-run/ui/components'
+import { IconSolidExternalLink, Stack, Text } from '@highlight-run/ui/components'
 import { useClearbitIntegration } from '@pages/IntegrationsPage/components/ClearbitIntegration/utils'
 import { useClickUpIntegration } from '@pages/IntegrationsPage/components/ClickUpIntegration/utils'
 import { useCloudflareIntegration } from '@pages/IntegrationsPage/components/CloudflareIntegration/utils'
@@ -25,6 +25,7 @@ import { useGitlabIntegration } from '@/pages/IntegrationsPage/components/Gitlab
 import { useJiraIntegration } from '@/pages/IntegrationsPage/components/JiraIntegration/utils'
 import { useMicrosoftTeamsBot } from '@/pages/IntegrationsPage/components/MicrosoftTeamsIntegration/utils'
 import { IntegrationModal } from '@/pages/IntegrationsPage/components/IntegrationModal'
+import { Button } from '@/components/Button'
 
 import styles from './IntegrationsPage.module.css'
 
@@ -37,67 +38,56 @@ const IntegrationsPage = () => {
 
 	const [popUpModal] = useQueryParam('enable', StringParam)
 	const navigate = useNavigate()
-
-	// Modal state for integrations that use hasSettings / modal flow
 	const [modalOpen, setModalOpen] = useState(false)
+	const [activeTab, setActiveTab] = useState<'description' | 'configure'>(
+		'description',
+	)
 
 	const { isHighlightAdmin } = useAuthContext()
 	const { currentWorkspace } = useApplicationContext()
 
 	const { isLinearIntegratedWithProject, loading: loadingLinear } =
 		useLinearIntegration()
-
 	const { isZapierIntegratedWithProject, loading: loadingZapier } =
 		useZapierIntegration()
-
 	const { isClearbitIntegratedWithWorkspace, loading: loadingClearbit } =
 		useClearbitIntegration()
-
 	const { isVercelIntegratedWithProject, loading: loadingVercel } =
 		useVercelIntegration()
-
 	const { isDiscordIntegratedWithProject, loading: loadingDiscord } =
 		useDiscordIntegration()
-
 	const { isHerokuConnectedToWorkspace, loading: loadingHeroku } =
 		useHerokuIntegration()
-
 	const { isCloudflareConnectedToWorkspace, loading: loadingCloudflare } =
 		useCloudflareIntegration()
-
 	const {
 		isMicrosoftTeamsConnectedToWorkspace,
 		loading: loadingMicrosoftTeams,
 	} = useMicrosoftTeamsBot()
-
 	const {
 		settings: {
 			isIntegrated: isJiraIntegratedWithProject,
 			loading: loadingJira,
 		},
 	} = useJiraIntegration()
-
 	const {
 		settings: {
 			isIntegrated: isGitlabIntegratedWithProject,
 			loading: loadingGitlab,
 		},
 	} = useGitlabIntegration()
-
 	const {
 		settings: {
 			isIntegrated: isGitHubIntegratedWithProject,
 			loading: loadingGitHub,
 		},
 	} = useGitHubIntegration()
-
 	const {
 		settings: {
 			isIntegrated: isClickUpIntegratedWithProject,
 			loading: loadingClickUp,
 		},
 	} = useClickUpIntegration()
-
 	const {
 		settings: {
 			isIntegrated: isHeightIntegratedWithProject,
@@ -129,20 +119,17 @@ const IntegrationsPage = () => {
 			) {
 				let canSee = false
 				const workspaceID = currentWorkspace?.id
-
 				if (integration.allowlistWorkspaceIds && workspaceID) {
 					canSee =
 						canSee ||
 						integration.allowlistWorkspaceIds?.includes(workspaceID)
 				}
-
 				if (integration.onlyShowForHighlightAdmin) {
 					canSee = canSee || isHighlightAdmin
 				}
 				return canSee
-			} else {
-				return true
 			}
+			return true
 		}).map((inter) => ({
 			...inter,
 			defaultEnable:
@@ -185,36 +172,37 @@ const IntegrationsPage = () => {
 
 	useEffect(() => analytics.page('Integrations'), [])
 
-	// Default to first integration if none is selected
 	useEffect(() => {
 		if (!selectedIntegrationKey && integrations.length > 0) {
 			navigate(`/integrations/${integrations[0].key}`, { replace: true })
 		}
 	}, [selectedIntegrationKey, integrations, navigate])
 
-	// Open modal automatically if ?enable= query param matches current integration
+	// Reset to description tab when switching integrations
 	useEffect(() => {
-		if (
-			popUpModal &&
-			popUpModal === selectedIntegrationKey
-		) {
+		setActiveTab('description')
+	}, [selectedIntegrationKey])
+
+	useEffect(() => {
+		if (popUpModal && popUpModal === selectedIntegrationKey) {
 			setModalOpen(true)
 		}
 	}, [popUpModal, selectedIntegrationKey])
 
-	const selectedIntegration = useMemo(() => {
-		return integrations.find((i) => i.key === selectedIntegrationKey)
-	}, [integrations, selectedIntegrationKey])
+	const selectedIntegration = useMemo(
+		() => integrations.find((i) => i.key === selectedIntegrationKey),
+		[integrations, selectedIntegrationKey],
+	)
 
 	const enabledIntegrations = integrations.filter((i) => i.defaultEnable)
 	const availableIntegrations = integrations.filter((i) => !i.defaultEnable)
 
-	const handleSelectIntegration = (key: string) => {
+	const handleSelect = (key: string) => {
 		setModalOpen(false)
 		navigate(`/integrations/${key}`)
 	}
 
-	const renderSidebarItem = (integration: typeof integrations[0]) => (
+	const renderItem = (integration: typeof integrations[0]) => (
 		<div
 			key={integration.key}
 			className={clsx(
@@ -222,7 +210,7 @@ const IntegrationsPage = () => {
 				selectedIntegrationKey === integration.key &&
 					styles.activeIntegrationItem,
 			)}
-			onClick={() => handleSelectIntegration(integration.key)}
+			onClick={() => handleSelect(integration.key)}
 		>
 			<img
 				src={integration.icon}
@@ -244,101 +232,148 @@ const IntegrationsPage = () => {
 				<title>Integrations</title>
 			</Helmet>
 			<div className={styles.pageContainer}>
-				{/* Sidebar */}
-				<div className={styles.sidebar}>
-					<div className={styles.sidebarHeader}>
-						<Text size="large" weight="bold" color="default">
-							Integrations
-						</Text>
-					</div>
-
+				{/* Middle: integrations list */}
+				<div className={styles.listPanel}>
 					{enabledIntegrations.length > 0 && (
-						<div className={styles.sidebarSection}>
-							<div className={styles.sidebarSectionLabel}>
-								Enabled
+						<div className={styles.listSection}>
+							<div className={styles.listSectionLabel}>
+								Enabled Integrations
 							</div>
-							{enabledIntegrations.map(renderSidebarItem)}
+							{enabledIntegrations.map(renderItem)}
 						</div>
 					)}
-
-					<div className={styles.sidebarSection}>
-						<div className={styles.sidebarSectionLabel}>
-							Available
+					<div className={styles.listSection}>
+						<div className={styles.listSectionLabel}>
+							Available Integrations
 						</div>
-						{availableIntegrations.map(renderSidebarItem)}
+						{availableIntegrations.map(renderItem)}
 					</div>
 				</div>
 
-				{/* Main Content */}
-				<div className={styles.contentArea}>
-					{selectedIntegration ? (
-						<>
-							<div className={styles.contentHeader}>
+				{/* Right: detail panel */}
+				{selectedIntegration && (
+					<div className={styles.detailPanel}>
+						{/* Top bar: name label left, Open link right */}
+						<div className={styles.detailTopBar}>
+							<Text size="xSmall" color="n11">
+								{selectedIntegration.name}
+							</Text>
+							{selectedIntegration.externalLink && (
+								<a
+									href={selectedIntegration.externalLink}
+									target="_blank"
+									rel="noreferrer"
+									className={styles.openLink}
+								>
+									<Text size="small" color="default">
+										Open {selectedIntegration.name}
+									</Text>
+									<IconSolidExternalLink size={12} />
+								</a>
+							)}
+						</div>
+
+						{/* Header: logo + name + Disconnect button */}
+						<div className={styles.detailHeader}>
+							<Stack
+								direction="row"
+								align="center"
+								justify="space-between"
+							>
 								<Stack direction="row" align="center" gap="12">
 									<img
 										src={selectedIntegration.icon}
 										alt={selectedIntegration.name}
 										style={{
-											width: 32,
-											height: 32,
+											width: 36,
+											height: 36,
 											borderRadius:
 												selectedIntegration.noRoundedIcon
 													? 0
-													: 6,
+													: 8,
 											objectFit: 'contain',
 										}}
 									/>
-									<Stack direction="column" gap="4">
-										<Text
-											size="large"
-											weight="bold"
-											color="default"
-										>
-											{selectedIntegration.name}
-										</Text>
-										<Text size="small" color="n11">
-											{selectedIntegration.description}
-										</Text>
-									</Stack>
+									<Text
+										size="large"
+										weight="bold"
+										color="default"
+									>
+										{selectedIntegration.name}
+									</Text>
 								</Stack>
-							</div>
+								{selectedIntegration.defaultEnable && (
+									<Button
+										trackingId={`IntegrationDisconnect-${selectedIntegration.key}`}
+										kind="secondary"
+										size="small"
+										onClick={() => setModalOpen(true)}
+									>
+										Disconnect
+									</Button>
+								)}
+							</Stack>
+						</div>
 
-							<div className={styles.configContainer}>
-								{selectedIntegration.configurationPage({
+						{/* Tabs */}
+						<div className={styles.tabs}>
+							<button
+								className={clsx(
+									styles.tab,
+									activeTab === 'description' &&
+										styles.activeTab,
+								)}
+								onClick={() => setActiveTab('description')}
+							>
+								Description
+							</button>
+							{selectedIntegration.hasSettings && (
+								<button
+									className={clsx(
+										styles.tab,
+										activeTab === 'configure' &&
+											styles.activeTab,
+									)}
+									onClick={() => setActiveTab('configure')}
+								>
+									Configure
+								</button>
+							)}
+						</div>
+
+						{/* Tab content */}
+						<div className={styles.tabContent}>
+							{activeTab === 'description' ? (
+								<div className={styles.descriptionArea}>
+									<Text size="small" color="n11">
+										{selectedIntegration.description}
+									</Text>
+								</div>
+							) : (
+								<div className={styles.configureArea}>
+									{selectedIntegration.configurationPage({
+										integration: selectedIntegration,
+										setModalOpen,
+									})}
+								</div>
+							)}
+						</div>
+
+						{/* Modal for connect/disconnect */}
+						<IntegrationModal
+							title={selectedIntegration.name}
+							visible={modalOpen}
+							width={selectedIntegration.modalWidth}
+							onCancel={() => setModalOpen(false)}
+							configurationPage={() =>
+								selectedIntegration.configurationPage({
 									integration: selectedIntegration,
 									setModalOpen,
-								})}
-							</div>
-
-							{/* Modal for integrations that use hasSettings */}
-							{selectedIntegration.hasSettings && (
-								<IntegrationModal
-									title={selectedIntegration.name}
-									visible={modalOpen}
-									width={selectedIntegration.modalWidth}
-									onCancel={() => setModalOpen(false)}
-									configurationPage={() =>
-										selectedIntegration.configurationPage({
-											integration: selectedIntegration,
-											setModalOpen,
-										})
-									}
-								/>
-							)}
-						</>
-					) : (
-						<Box
-							display="flex"
-							alignItems="center"
-							justifyContent="center"
-							style={{ height: '100%' }}
-						>
-							<Text color="n11">
-								Select an integration from the sidebar.
-							</Text>
-						</Box>
-					)}
-				</div>
+								})
+							}
+						/>
+					</div>
+				)}
 			</div>
 		</>
 	)

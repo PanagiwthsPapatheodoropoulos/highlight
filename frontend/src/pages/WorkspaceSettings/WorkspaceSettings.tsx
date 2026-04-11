@@ -45,7 +45,8 @@ const WorkspaceSettings = () => {
                                 <Box
                                     padding="16"
                                     border="dividerWeak"
-                                    style={{ borderRadius: 8, backgroundColor: 'var(--color-background-raised)' }}
+                                    borderRadius="4"
+                                    backgroundColor="raised"
                                 >
                                     <Stack gap="4">
                                         <Text weight="bold">

@@ -261,6 +261,7 @@ export const HeightIntegrationSettings: React.FC<
 						<ComboboxSelect
 							value={value?.value}
 							onChange={row.onUpdateProjectLink}
+							onClear={() => row.onUpdateProjectLink('')}
 							options={selectOptions}
 							placeholder="Height workspace"
 						/>
